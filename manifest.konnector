@@ -7,7 +7,7 @@
   "slug": "jobready",
   "source": "git@github.com:paultranvan/jobready.git",
   "editor": "Cozy",
-  "vendor_link": "Link to the target website",
+  "vendor_link": "https://www.jobready.fr/",
   "categories": ["others"],
   "fields": {
     "login": {
