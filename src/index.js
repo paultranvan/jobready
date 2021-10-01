@@ -31,13 +31,17 @@ async function start(fields) {
     const account = cozyFields.account
     const payload = JSON.parse(process.env.COZY_PAYLOAD || '{}')
 
+    log('debug', `Payload: ${JSON.stringify(payload)}`)
+
     if (payload.serviceExportUrl && payload.signedConsent) {
       log('info', `Start consent import`)
-      await consentImport(account, payload)
+      const consent = await consentImport(account, payload)
+      log('debug', `Consent: ${JSON.stringify(consent)}`)
       return
     } else if (payload.signedConsent && payload.data && payload.user) {
       log('info', `Start data import`)
-      await importData(fields, payload)
+      const data = await importData(fields, payload)
+      log('debug', `Import data: ${JSON.stringify(data)}`)
       return
     }
 
@@ -53,7 +57,7 @@ async function start(fields) {
 
     log('info', 'Get purposes')
     const purposes = await getPurposes(token)
-    if (purposes.length < 1) {
+    if (!purposes || purposes.length < 1) {
       throw new Error('No purpose found')
     }
     const purposeId = purposes[0].id
@@ -67,14 +71,20 @@ async function start(fields) {
     const datatypes = popup.datatypes.filter(
       type => type.serviceExport === VENDOR
     )
+    if (!datatypes || datatypes.length < 1) {
+      throw new Error('No datatype')
+    }
     const emailExport = popup.emailsExport.find(type => type.service === VENDOR)
+    if (!emailExport) {
+      throw new Error('No email export')
+    }
 
     const webhook = await getOrCreateWebhook(fields, account)
     const importUrl = webhook.links.webhook
-    log('info', `Webhook available on ${importUrl}`)
+    log('debug', `Webhook available on ${importUrl}`)
 
     log('info', 'Create import consent')
-    await createConsent(token, {
+    const consent = await createConsent(token, {
       datatypes,
       emailImport: user.email,
       emailExport: emailExport.email,
@@ -82,6 +92,7 @@ async function start(fields) {
       purpose: purposeId,
       userKey: user.userKey
     })
+    log('debug', `Consent: ${JSON.stringify(consent)}`)
     log('info', 'Done!')
   } catch (err) {
     log('error', err && err.message)
@@ -126,7 +137,9 @@ const getOrCreateWebhook = async (fields, accountId) => {
 
 const getOrCreateUser = async (token, params) => {
   const { email, userServiceId } = params
-
+  if (!email || !userServiceId) {
+    throw new Error('Missing parameters')
+  }
   let user
   try {
     user = await request.get(`${baseUrl}/users/${email}`, {
@@ -160,6 +173,9 @@ const getPurposes = async token => {
 
 const popupImport = async (token, params) => {
   const { purpose, emailImport } = params
+  if (!purpose || !emailImport) {
+    throw new Error('Missing parameters')
+  }
   return request.post(`${baseUrl}/popups/import`, {
     body: { purpose, emailImport },
     auth: {
@@ -169,16 +185,18 @@ const popupImport = async (token, params) => {
 }
 
 const createConsent = async (token, params) => {
-  const data = {
-    datatypes: params.datatypes,
-    emailImport: params.emailImport,
-    emailExport: params.emailExport,
-    serviceExport: params.serviceExport,
-    purpose: params.purpose,
-    userKey: params.userKey
+  if (
+    !params.datatypes ||
+    !params.emailImport ||
+    !params.emailExport ||
+    !params.serviceExport ||
+    !params.purpose ||
+    !params.userKey
+  ) {
+    throw new Error('Missing parameters')
   }
   return request.post(`${baseUrl}/consents/exchange/import`, {
-    body: data,
+    body: params,
     auth: {
       bearer: token
     }
@@ -193,7 +211,7 @@ const consentImport = async (accountId, params) => {
   }
   const webhook = await getAccountWebhook(accountId)
   const dataImportUrl = webhook.links.webhook
-  await request.post(`${serviceExportUrl}`, {
+  return request.post(`${serviceExportUrl}`, {
     body: {
       signedConsent,
       dataImportUrl
@@ -214,7 +232,7 @@ const importData = async (fields, params) => {
     filename: `${VENDOR}.txt`,
     shouldReplaceFile: () => true
   }
-  await saveFiles([file], fields)
+  return saveFiles([file], fields)
 }
 
 const generateJWT = (serviceKey, secretKey) => {
