@@ -226,12 +226,15 @@ const importData = async (fields, params) => {
   if (!data) {
     throw new Error('Missing parameters')
   }
+
+  const content = '```json' + '\n' + JSON.stringify(data, null, 4) + '\n```'
+
   const file = {
-    filestream: JSON.stringify(data),
-    filename: `${VENDOR}.txt`,
+    filestream: content,
+    filename: `${VENDOR}.md`,
     shouldReplaceFile: () => true
   }
-  return saveFiles([file], fields)
+  return saveFiles([file], fields, { contentType: 'text/markdown' })
 }
 
 const generateJWT = (serviceKey, secretKey) => {
