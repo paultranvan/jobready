@@ -11,7 +11,10 @@
   "categories": ["education"],
   "fields": {
     "login": {
-      "type": "text"
+      "type": "text",
+      "description": "consentExplanations",
+      "side": "consentExplanations",
+      "placeholder": "En cliquant sur Sauvegarder, vous consentez à ce que Jobready transmette vos données à votre Cozy. Il vous faudra aller dans vos mails pour valider cette demande."
     }
   },
   "folders": [{"defaultDir": "$administrative/$konnector/$account"}],
@@ -46,7 +49,14 @@
         "accounts": {
           "description": "Utilisé pour obtenir les données du compte"
         }
-      }
+      },
+      "fields": {
+        "login": {
+          "description": "super description",
+          "side": "super side"
+        }
+      },
+      "consentExplanations": "En cliquant sur Sauvegarder, vous consentez à ce que Jobready transmette vos données à votre Cozy. Il vous faudra aller dans vos mails pour valider cette demande."
     },
     "en": {
       "short_description": "Fetch your data from Jobready",
@@ -58,7 +68,8 @@
         "accounts": {
           "description": "Required to get the account's data"
         }
-      }
+      },
+      "consentExplanations": "En cliquant sur Sauvegarder, vous consentez à ce que Jobready transmette vos données à votre Cozy. Il vous faudra aller dans vos mails pour valider cette demande."
     }
   },
   "manifest_version": "2"
