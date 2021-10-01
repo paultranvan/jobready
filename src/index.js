@@ -211,7 +211,8 @@ const importData = async (fields, params) => {
   }
   const file = {
     filestream: JSON.stringify(data),
-    filename: `${VENDOR}.txt`
+    filename: `${VENDOR}.txt`,
+    shouldReplaceFile: () => true
   }
   await saveFiles([file], fields)
 }
