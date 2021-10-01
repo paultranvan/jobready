@@ -68,12 +68,15 @@ async function start(fields) {
       emailImport: email
     })
 
-    const datatypes = popup.datatypes.filter(
-      type => type.serviceExport === VENDOR
-    )
+    const datatypes = popup.datatypes
+      .filter(type => type.serviceExport === VENDOR)
+      .map(type => {
+        return { ...type, checked: true }
+      })
     if (!datatypes || datatypes.length < 1) {
       throw new Error('No datatype')
     }
+
     const emailExport = popup.emailsExport.find(type => type.service === VENDOR)
     if (!emailExport) {
       throw new Error('No email export')
