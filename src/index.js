@@ -54,6 +54,7 @@ async function start(fields) {
     if (!user) {
       throw new Error('No user found')
     }
+    log('info', `user : ${JSON.stringify(user)}`)
 
     log('info', 'Get purposes')
     const purposes = await getPurposes(token)
@@ -85,6 +86,29 @@ async function start(fields) {
     const webhook = await getOrCreateWebhook(fields, account)
     const importUrl = webhook.links.webhook
     log('debug', `Webhook available on ${importUrl}`)
+
+    const service = popup.exportServices.find(
+      service => service.serviceName === VENDOR
+    )
+    if (!service) {
+      throw new Error('No service found matching ', VENDOR)
+    }
+    const serviceId = service.serviceId
+
+    const hasImportEndpoint = user.endpoints.dataImport.find(item => {
+      return item.serviceId === serviceId && item.url === importUrl
+    })
+    const hasConsentEndpoint = user.endpoints.consentImport.find(item => {
+      return item.serviceId === serviceId && item.url === importUrl
+    })
+
+    if (!hasImportEndpoint || !hasConsentEndpoint) {
+      await updateUserEndpointForService(token, {
+        user,
+        serviceId,
+        url: importUrl
+      })
+    }
 
     log('info', 'Create import consent')
     const consent = await createConsent(token, {
@@ -164,6 +188,46 @@ const getOrCreateUser = async (token, params) => {
     }
     throw new Error(err)
   }
+}
+
+const updateUserEndpointForService = async (token, params) => {
+  const { user, url, serviceId } = params
+  if (!user || !url || !serviceId) {
+    throw new Error('Missing parameters')
+  }
+
+  const newEndpoints = { ...user.endpoints }
+  const existingDataImport = newEndpoints.dataImport.find(
+    item => item.serviceId === serviceId
+  )
+  if (existingDataImport) {
+    existingDataImport.url = url
+  } else {
+    newEndpoints.dataImport.push({
+      serviceId,
+      url
+    })
+  }
+
+  const existingConsentImport = newEndpoints.consentImport.find(
+    item => item.serviceId === serviceId
+  )
+  if (existingConsentImport) {
+    existingConsentImport.url = url
+  } else {
+    newEndpoints.consentImport.push({
+      serviceId,
+      url
+    })
+  }
+  log('info', `update endpoint on serviceId ${serviceId} with URL: ${url}`)
+
+  return request.put(`${baseUrl}/users/${user.userKey}`, {
+    body: { email: user.email, endpoints: newEndpoints },
+    auth: {
+      bearer: token
+    }
+  })
 }
 
 const getPurposes = async token => {
