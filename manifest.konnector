@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "name": "Jobready",
+  "name": "Jobready (via Visions)",
   "type": "konnector",
   "language": "node",
   "icon": "icon.svg",
