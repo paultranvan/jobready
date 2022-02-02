@@ -178,7 +178,7 @@ const getOrCreateUser = async (token, params) => {
       return user
     }
   } catch (err) {
-    if (err.statusCode == 400) {
+    if (err.statusCode == 404) {
       return request.post(`${baseUrl}/users`, {
         body: { email, userServiceId },
         auth: {
